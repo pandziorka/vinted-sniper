@@ -53,28 +53,27 @@ def send_discord(item):
 
 
 def check_search(search):
-
     url = f"https://www.vinted.pl/api/v2/catalog/items?search_text={search['query']}&order=newest_first&per_page=20"
 
     r = requests.get(url, headers=headers)
 
-if r.status_code != 200:
-    print("API error:", r.status_code)
-    return
+    if r.status_code != 200:
+        print("API error:", r.status_code)
+        return
 
-try:
-    data = r.json()
-except:
-    print("Vinted zwrócił niepoprawną odpowiedź")
-    return
+    try:
+        data = r.json()
+    except:
+        print("Vinted zwrócił niepoprawną odpowiedź")
+        return
 
-if "items" not in data:
-    print("Brak 'items' w odpowiedzi API")
-    return
+    if "items" not in data:
+        print("Brak 'items' w odpowiedzi API")
+        return
 
-items = data["items"]
+    items = data["items"]
+
     for item in items:
-
         item_id = item["id"]
 
         if item_id in seen_ids:
@@ -93,7 +92,6 @@ items = data["items"]
             continue
 
         send_discord(item)
-
         print("Nowa oferta:", item["title"], price)
 
 
@@ -113,3 +111,4 @@ while True:
 
 
         time.sleep(10)
+
