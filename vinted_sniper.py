@@ -5,23 +5,19 @@ import time
 # KONFIGURACJA
 # =========================
 
-TOKEN = "eyJraWQiOiJFNTdZZHJ1SHBsQWp1MmNObzFEb3JIM2oyN0J1NS1zX09QNVB3UGlobjVNIiwiYWxnIjoiUFMyNTYifQ.eyJhY2NvdW50X2lkIjoxMDk1OTA4NDgsImFwcF9pZCI6NCwiYXVkIjoiZnIuY29yZS5hcGkiLCJjbGllbnRfaWQiOiJ3ZWIiLCJleHAiOjE3NzMwMDcxNzUsImlhdCI6MTc3Mjk5OTk3NSwiaXNzIjoidmludGVkLWlhbS1zZXJ2aWNlIiwibG9naW5fdHlwZSI6MywicHVycG9zZSI6ImFjY2VzcyIsInNjb3BlIjoidXNlciIsInNpZCI6IjUwNGFkNGU5LTE3NzI5OTk5NzUiLCJzdWIiOiIxNjA2OTQ0MDAiLCJjYyI6IlBMIiwiYW5pZCI6ImFhY2Y2NjZiLWFmMmEtNGY2Yi1iMzYyLTllNzA5YTEzNzdmNyIsImFjdCI6eyJzdWIiOiIxNjA2OTQ0MDAifX0.HRfrNjx-7mIdlYrEQoo-6qVloqG3WotnC9bKcZqipAWgi7B6jWmgTlqu1jyvC-Q4s41tqmaJuTkpiDyXpEGPgFMz3mQRz0BF73oRtCcyQZeVIoHUALgCUqgxxdVNrnMsS9smw3h5Db4iQHSQGzWGYnde_bgtTSs-qdQ_He2wMfkk6FOfot6r4g0Df0sH3Nk-kNH_c13gDOvupoqCWv3VGfV1TJxRweOHNGeylCw3HgzX0AVdL0LJ4daxUIghyz1ROyY_mT7ha_39J7zSdF4W3wAkNtzv-ky1HCbja_S8nAR3BJuhh7BlGIQ5cW6C27oe3H5PZpUDOWOHiUa0GgFfmg"
-
 DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1480276065787056243/lO0zOj2__3OWDnvxZY559DWNMyvHOMFDZrsbpuBbZBRsaEl6lr1rNHpuuMAbyRxK6jZ3"
 
 CHECK_DELAY = 2
 
-MAX_PRICE = 600
+MAX_PRICE =  600
 
-# modele iphone które chcesz łapać
 IPHONE_KEYWORDS = [
-    "iphone 13",
-    "iphone 14",
     "iphone 15",
+    "iphone 14",
+    "iphone 13",
     "iphone 12"
 ]
 
-# czarna lista
 BLACKLIST = [
     "na części",
     "na czesci",
@@ -35,24 +31,23 @@ BLACKLIST = [
 # =========================
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0",
-    "Accept": "application/json",
-    "Authorization": f"Bearer {TOKEN}"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept": "application/json"
 }
 
-SEARCH_URL = "https://www.vinted.pl/api/v2/catalog/items"
+URL = "https://www.vinted.pl/api/v2/catalog/items"
 
 seen_ids = set()
 
 
-def send_to_discord(title, price, url, image):
+def send_to_discord(title, price, link, image):
 
     data = {
         "embeds": [
             {
                 "title": title,
-                "url": url,
-                "color": 3066993,
+                "url": link,
+                "color": 3447003,
                 "fields": [
                     {
                         "name": "Price",
@@ -60,32 +55,28 @@ def send_to_discord(title, price, url, image):
                         "inline": True
                     }
                 ],
-                "image": {
-                    "url": image
-                },
-                "footer": {
-                    "text": "Vinted iPhone Sniper"
-                }
+                "image": {"url": image},
+                "footer": {"text": "Vinted iPhone Sniper"}
             }
         ]
     }
 
-    requests.post(DISCORD_WEBHOOK, json=data)
+    try:
+        requests.post(DISCORD_WEBHOOK, json=data)
+    except:
+        pass
 
 
 def valid_item(title, price):
 
-    title_lower = title.lower()
+    t = title.lower()
 
-    # czy zawiera iphone
-    if not any(word in title_lower for word in IPHONE_KEYWORDS):
+    if not any(k in t for k in IPHONE_KEYWORDS):
         return False
 
-    # czarna lista
-    if any(word in title_lower for word in BLACKLIST):
+    if any(b in t for b in BLACKLIST):
         return False
 
-    # cena
     if price > MAX_PRICE:
         return False
 
@@ -102,14 +93,13 @@ def check_items():
 
     try:
 
-        r = requests.get(SEARCH_URL, headers=HEADERS, params=params)
+        r = requests.get(URL, headers=HEADERS, params=params)
 
         if r.status_code != 200:
-            print("API error:", r.status_code)
+            print("API ERROR:", r.status_code)
             return
 
-        data = r.json()
-        items = data["items"]
+        items = r.json()["items"]
 
         for item in items:
 
@@ -127,13 +117,13 @@ def check_items():
             if not valid_item(title, price):
                 continue
 
-            url = item["url"]
+            link = item["url"]
 
             image = item["photo"]["url"]
 
-            print("IPHONE FOUND:", title)
+            print("FOUND:", title, price)
 
-            send_to_discord(title, price, url, image)
+            send_to_discord(title, price, link, image)
 
     except Exception as e:
         print("Error:", e)
