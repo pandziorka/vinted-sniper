@@ -1,114 +1,147 @@
 import requests
 import time
 
-WEBHOOK = "https://discord.com/api/webhooks/1480276065787056243/lO0zOj2__3OWDnvxZY559DWNMyvHOMFDZrsbpuBbZBRsaEl6lr1rNHpuuMAbyRxK6jZ3"
+# =========================
+# KONFIGURACJA
+# =========================
 
-CHECK_DELAY = 4
+TOKEN = "eyJraWQiOiJFNTdZZHJ1SHBsQWp1MmNObzFEb3JIM2oyN0J1NS1zX09QNVB3UGlobjVNIiwiYWxnIjoiUFMyNTYifQ.eyJhY2NvdW50X2lkIjoxMDk1OTA4NDgsImFwcF9pZCI6NCwiYXVkIjoiZnIuY29yZS5hcGkiLCJjbGllbnRfaWQiOiJ3ZWIiLCJleHAiOjE3NzMwMDcxNzUsImlhdCI6MTc3Mjk5OTk3NSwiaXNzIjoidmludGVkLWlhbS1zZXJ2aWNlIiwibG9naW5fdHlwZSI6MywicHVycG9zZSI6ImFjY2VzcyIsInNjb3BlIjoidXNlciIsInNpZCI6IjUwNGFkNGU5LTE3NzI5OTk5NzUiLCJzdWIiOiIxNjA2OTQ0MDAiLCJjYyI6IlBMIiwiYW5pZCI6ImFhY2Y2NjZiLWFmMmEtNGY2Yi1iMzYyLTllNzA5YTEzNzdmNyIsImFjdCI6eyJzdWIiOiIxNjA2OTQ0MDAifX0.HRfrNjx-7mIdlYrEQoo-6qVloqG3WotnC9bKcZqipAWgi7B6jWmgTlqu1jyvC-Q4s41tqmaJuTkpiDyXpEGPgFMz3mQRz0BF73oRtCcyQZeVIoHUALgCUqgxxdVNrnMsS9smw3h5Db4iQHSQGzWGYnde_bgtTSs-qdQ_He2wMfkk6FOfot6r4g0Df0sH3Nk-kNH_c13gDOvupoqCWv3VGfV1TJxRweOHNGeylCw3HgzX0AVdL0LJ4daxUIghyz1ROyY_mT7ha_39J7zSdF4W3wAkNtzv-ky1HCbja_S8nAR3BJuhh7BlGIQ5cW6C27oe3H5PZpUDOWOHiUa0GgFfmg"
 
-SEARCHES = [
-    {"query": "iphone 13", "max_price": 1200},
-    {"query": "iphone 13 mini", "max_price": 900},
-    {"query": "iphone 14", "max_price": 1500},
-    {"query": "iphone 12 pro", "max_price": 900},
+DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1480276065787056243/lO0zOj2__3OWDnvxZY559DWNMyvHOMFDZrsbpuBbZBRsaEl6lr1rNHpuuMAbyRxK6jZ3"
+
+CHECK_DELAY = 2
+
+MAX_PRICE = 600
+
+# modele iphone które chcesz łapać
+IPHONE_KEYWORDS = [
+    "iphone 13",
+    "iphone 14",
+    "iphone 15",
+    "iphone 12"
 ]
 
-BLOCKED_WORDS = [
+# czarna lista
+BLACKLIST = [
     "na części",
     "na czesci",
     "uszkodzony",
-    "blokada icloud",
-    "nie sprzedaje przez kup teraz",
+    "zablokowany",
+    "nie wysyłam przez vinted",
     "blik",
-    "tylko przelew",
-    "zamiana",
-    "rezerwacja",
+    "kup teraz"
 ]
+
+# =========================
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json",
+    "Authorization": f"Bearer {TOKEN}"
+}
+
+SEARCH_URL = "https://www.vinted.pl/api/v2/catalog/items"
 
 seen_ids = set()
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0",
-    "Accept": "application/json",
-    "Referer": "https://www.vinted.pl/"
-}
 
-def contains_blocked(text):
-    text = text.lower()
-    for word in BLOCKED_WORDS:
-        if word in text:
-            return True
-    return False
+def send_to_discord(title, price, url, image):
 
-
-def send_discord(item):
-    title = item["title"]
-    price = item["price"]
-    url = item["url"]
-
-    message = {
-        "content": f"📱 **NOWA OFERTA**\n{title}\n💰 {price} zł\n{url}"
+    data = {
+        "embeds": [
+            {
+                "title": title,
+                "url": url,
+                "color": 3066993,
+                "fields": [
+                    {
+                        "name": "Price",
+                        "value": f"{price} zł",
+                        "inline": True
+                    }
+                ],
+                "image": {
+                    "url": image
+                },
+                "footer": {
+                    "text": "Vinted iPhone Sniper"
+                }
+            }
+        ]
     }
 
-    requests.post(WEBHOOK, json=message)
+    requests.post(DISCORD_WEBHOOK, json=data)
 
 
-def check_search(search):
-    url = f"https://www.vinted.pl/api/v2/catalog/items?search_text={search['query']}&order=newest_first&per_page=20"
+def valid_item(title, price):
 
-    r = requests.get(url, headers=headers)
+    title_lower = title.lower()
 
-    if r.status_code != 200:
-        print("API error:", r.status_code)
-        return
+    # czy zawiera iphone
+    if not any(word in title_lower for word in IPHONE_KEYWORDS):
+        return False
+
+    # czarna lista
+    if any(word in title_lower for word in BLACKLIST):
+        return False
+
+    # cena
+    if price > MAX_PRICE:
+        return False
+
+    return True
+
+
+def check_items():
+
+    params = {
+        "search_text": "iphone",
+        "order": "newest_first",
+        "per_page": 20
+    }
 
     try:
+
+        r = requests.get(SEARCH_URL, headers=HEADERS, params=params)
+
+        if r.status_code != 200:
+            print("API error:", r.status_code)
+            return
+
         data = r.json()
-    except:
-        print("Vinted zwrócił niepoprawną odpowiedź")
-        return
+        items = data["items"]
 
-    if "items" not in data:
-        print("Brak 'items' w odpowiedzi API")
-        return
+        for item in items:
 
-    items = data["items"]
+            item_id = item["id"]
 
-    for item in items:
-        item_id = item["id"]
+            if item_id in seen_ids:
+                continue
 
-        if item_id in seen_ids:
-            continue
+            seen_ids.add(item_id)
 
-        seen_ids.add(item_id)
+            title = item["title"]
 
-        title = item["title"].lower()
+            price = float(item["price"]["amount"])
 
-        if contains_blocked(title):
-            continue
+            if not valid_item(title, price):
+                continue
 
-        price = float(item["price"])
+            url = item["url"]
 
-        if price > search["max_price"]:
-            continue
+            image = item["photo"]["url"]
 
-        send_discord(item)
-        print("Nowa oferta:", item["title"], price)
+            print("IPHONE FOUND:", title)
+
+            send_to_discord(title, price, url, image)
+
+    except Exception as e:
+        print("Error:", e)
 
 
 while True:
 
-    try:
+    check_items()
 
-        for search in SEARCHES:
-
-            check_search(search)
-
-        time.sleep(CHECK_DELAY)
-
-    except Exception as e:
-
-        print("Błąd:", e)
-
-
-        time.sleep(10)
+    time.sleep(CHECK_DELAY)
 
