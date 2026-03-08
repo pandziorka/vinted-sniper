@@ -20,7 +20,12 @@ BLACKLIST = [
     "zablokowany",
     "nie wysyłam przez vinted",
     "blik",
-    "kup teraz"
+    "kup teraz",
+    "dummy","atrapa",
+    "na części","na czesci","części","czesci",
+    "housing","ramka",
+    "do iphone","dla iphone",
+    "zamiana","swap"
 ]
 
 session = requests.Session()
@@ -74,10 +79,41 @@ def valid_item(title, price):
 
     t = title.lower()
 
+    # musi zawierać model iphone
     if not any(k in t for k in IPHONE_KEYWORDS):
         return False
 
-    if any(b in t for b in BLACKLIST):
+    # blokujemy tylko gdy tytuł zaczyna się od akcesorium
+    accessory_starts = [
+        "etui",
+        "case",
+        "pokrowiec",
+        "szkło",
+        "szklo",
+        "glass",
+        "kabel",
+        "ładowarka",
+        "ladowarka"
+    ]
+
+    for word in accessory_starts:
+        if t.startswith(word):
+            return False
+
+    # blokada części i uszkodzonych
+    parts_words = [
+        "na części",
+        "na czesci",
+        "uszkodzony",
+        "uszkodzone",
+        "zablokowany",
+        "blokada icloud",
+        "display",
+        "wyświetlacz",
+        "wyswietlacz"
+    ]
+
+    if any(word in t for word in parts_words):
         return False
 
     if price > MAX_PRICE:
@@ -132,5 +168,6 @@ while True:
     time.sleep(CHECK_DELAY)
 
     time.sleep(CHECK_DELAY)
+
 
 
