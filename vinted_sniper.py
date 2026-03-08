@@ -108,9 +108,6 @@ def valid_item(title, price):
         "uszkodzone",
         "zablokowany",
         "blokada icloud",
-        "display",
-        "wyświetlacz",
-        "wyswietlacz"
     ]
 
     if any(word in t for word in parts_words):
@@ -128,7 +125,6 @@ def check_items():
          "search_text": "iphone",
     "order": "newest_first",
     "per_page": 20,
-    "category_id": "smartfony",
     "price_from": 100
     }
 
@@ -170,6 +166,7 @@ while True:
     time.sleep(CHECK_DELAY)
 
     time.sleep(CHECK_DELAY)
+
 
 
 
