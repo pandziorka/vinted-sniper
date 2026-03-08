@@ -3,7 +3,7 @@ import time
 
 WEBHOOK = "https://discord.com/api/webhooks/1480276065787056243/lO0zOj2__3OWDnvxZY559DWNMyvHOMFDZrsbpuBbZBRsaEl6lr1rNHpuuMAbyRxK6jZ3"
 
-CHECK_DELAY = 3
+CHECK_DELAY = 4
 
 SEARCHES = [
     {"query": "iphone 13", "max_price": 1200},
@@ -27,9 +27,10 @@ BLOCKED_WORDS = [
 seen_ids = set()
 
 headers = {
-    "User-Agent": "Mozilla/5.0"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0",
+    "Accept": "application/json",
+    "Referer": "https://www.vinted.pl/"
 }
-
 
 def contains_blocked(text):
     text = text.lower()
@@ -57,8 +58,21 @@ def check_search(search):
 
     r = requests.get(url, headers=headers)
 
-    items = r.json()["items"]
+if r.status_code != 200:
+    print("API error:", r.status_code)
+    return
 
+try:
+    data = r.json()
+except:
+    print("Vinted zwrócił niepoprawną odpowiedź")
+    return
+
+if "items" not in data:
+    print("Brak 'items' w odpowiedzi API")
+    return
+
+items = data["items"]
     for item in items:
 
         item_id = item["id"]
@@ -96,5 +110,6 @@ while True:
     except Exception as e:
 
         print("Błąd:", e)
+
 
         time.sleep(10)
