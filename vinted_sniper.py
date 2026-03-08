@@ -4,7 +4,7 @@ import time
 DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1480276065787056243/lO0zOj2__3OWDnvxZY559DWNMyvHOMFDZrsbpuBbZBRsaEl6lr1rNHpuuMAbyRxK6jZ3"
 
 CHECK_DELAY = 4
-MAX_PRICE = 4000
+MAX_PRICE = 600
 
 IPHONE_KEYWORDS = [
     "iphone 15",
@@ -125,9 +125,11 @@ def valid_item(title, price):
 def check_items():
 
     params = {
-        "search_text": "iphone",
-        "order": "newest_first",
-        "per_page": 20
+         "search_text": "iphone",
+    "order": "newest_first",
+    "per_page": 20,
+    "category_id": "smartfony",
+    "price_from": 100
     }
 
     r = session.get(URL, params=params)
@@ -168,6 +170,7 @@ while True:
     time.sleep(CHECK_DELAY)
 
     time.sleep(CHECK_DELAY)
+
 
 
 
